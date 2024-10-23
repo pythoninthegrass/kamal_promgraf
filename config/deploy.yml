@@ -1,0 +1,68 @@
+service: promgraf
+
+image: pythoninthegrass/kamal_promgraf
+
+registry:
+  server: ghcr.io
+  username:
+    - REGISTRY_USER
+  password:
+    - REGISTRY_PASS
+
+builder:
+  context: .
+  dockerfile: Dockerfile
+  local: false
+  remote: >
+    ssh://<%= ENV['SSH_USER'] %>@<%= ENV['DEPLOY_HOST'] %>:<%= ENV['SSH_PORT'] %>
+  arch:
+    - amd64
+    # - arm64
+  cache:
+    type: registry
+    options: mode=max
+    image: pythoninthegrass/kamal_promgraf:build-cache
+
+servers:
+  web:
+    - <%= ENV['DEPLOY_HOST'] %>
+
+ssh:
+  user: <%= ENV['SSH_USER'] %>
+  port: <%= ENV['SSH_PORT'] %>
+  keys: ["~/.ssh/id_rsa"]
+  config: true
+
+env:
+  secret:
+    - GF_SECURITY_ADMIN_USER
+    - GF_SECURITY_ADMIN_PASSWORD
+
+volumes:
+  - grafana_data:/var/lib/grafana
+  - grafana/config.ini:/etc/grafana/config.ini
+  - grafana/provisioning:/etc/grafana/provisioning
+  - grafana/dashboards:/var/lib/grafana/dashboards
+
+accessories:
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    host: <%= ENV['DEPLOY_HOST'] %>
+    port: ${PROMETHEUS_PORT:-9090}
+    volumes:
+      - "prometheus_data:/prometheus"
+      - "./config/prometheus.yml:/etc/prometheus/prometheus.yml"
+    cmd: --config.file=/etc/prometheus/prometheus.yml
+    directories:
+      - data:/prometheus
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.8.2
+    host: <%= ENV['DEPLOY_HOST'] %>
+    port: 9100
+
+proxy:
+  healthcheck:
+    path: /
+    interval: 5
+    timeout: 15

@@ -1,3 +1,5 @@
+<% require "dotenv"; Dotenv.load(".env") %>
+
 service: promgraf
 
 image: pythoninthegrass/kamal_promgraf
@@ -13,8 +15,7 @@ builder:
   context: .
   dockerfile: Dockerfile
   local: false
-  remote: >
-    ssh://<%= ENV['SSH_USER'] %>@<%= ENV['DEPLOY_HOST'] %>:<%= ENV['SSH_PORT'] %>
+  remote: ssh://<%= ENV['SSH_USER'] %>@<%= ENV['DEPLOY_HOST'] %>:<%= ENV['SSH_PORT'] %>
   arch:
     - amd64
     # - arm64
@@ -61,8 +62,10 @@ accessories:
     host: <%= ENV['DEPLOY_HOST'] %>
     port: 9100
 
-proxy:
-  healthcheck:
-    path: /
-    interval: 5
-    timeout: 15
+# TODO: test w/o proxy
+proxy: false
+# proxy:
+#   healthcheck:
+#     path: /
+#     interval: 5
+#     timeout: 15

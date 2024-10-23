@@ -1,0 +1,4 @@
+**/*.example
+**/*.md
+.gitignore
+.tool-versions
